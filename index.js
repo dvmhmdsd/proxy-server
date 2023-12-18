@@ -3,7 +3,7 @@ const http = require("http"),
 const proxy = httpProxy.createProxyServer({});
 const server = http.createServer(function (req, res) {
   proxy.web(req, res, {
-    target: "https://third_party_server...",
+    target: "https://atarcloud.com",
     secure: false,
     ws: false,
     prependPath: false,
