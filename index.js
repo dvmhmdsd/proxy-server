@@ -1,5 +1,14 @@
-const httpProxy = require('http-proxy');
+const httpProxy = require("http-proxy");
+const http = require("http");
 
-const PORT = process.env.PORT || 8001
+const PORT = process.env.PORT || 8001;
 
-httpProxy.createProxyServer({target:'https://atarcloud.com', changeOrigin: true}).listen(PORT); 
+const proxy = httpProxy.createProxyServer();
+
+http.createServer((req, res) => {
+  res.writeHead(200, {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "*",
+  });
+  proxy.web(req, res, { target: "https://atarcloud.com", changeOrigin: true });
+}).listen(PORT)
