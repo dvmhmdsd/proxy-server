@@ -1,15 +1,33 @@
-const httpProxy = require("http-proxy");
+const http = require("http"),
+  httpProxy = require("http-proxy");
+const proxy = httpProxy.createProxyServer({});
+const server = http.createServer(function (req, res) {
+  proxy.web(req, res, {
+    target: "https://third_party_server...",
+    secure: false,
+    ws: false,
+    prependPath: false,
+    ignorePath: false,
+  });
+});
 
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 8000;
 
-const proxy = httpProxy.createProxyServer({
-  target: "https://atarcloud.com",
-  changeOrigin: true,
+console.log(`listening on port ${PORT}`);
+server.listen(PORT);
+
+proxy.on("error", function (err, req, res) {
+  console.log(err);
+  res.writeHead(500, {
+    "Content-Type": "text/plain",
+  });
+  res.end("Oops");
 });
 
 proxy.on("proxyRes", function (proxyRes, req, res) {
-  proxyRes.headers["access-control-allow-origin"] = "*";
-  proxyRes.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS, PUT, DELETE";
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "POST, GET, OPTIONS, DELETE, PUT"
+  );
 });
-
-proxy.listen(PORT);
