@@ -9,6 +9,7 @@ const proxyServerPort = process.env.PROXY_SERVER_PORT || 5000;
 // eslint-disable-next-line max-lines-per-function
 app.use('/', function (clientRequest, clientResponse) {
   const targetUrl = clientRequest.headers.server_uri;
+  console.log('Received URL: ', targetUrl);
   const parsedHost = targetUrl?.split('/').splice(2).splice(0, 1).join('/');
   let parsedPort;
   let parsedSSL;
@@ -34,6 +35,7 @@ app.use('/', function (clientRequest, clientResponse) {
     if (String(serverResponse.headers['content-type']).indexOf('text/html') !== -1) {
       serverResponse.on('data', function (chunk) {
         body += chunk;
+        console.log('Response back ...')
       });
 
       serverResponse.on('end', function () {
