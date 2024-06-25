@@ -1,30 +1,58 @@
-const http = require("http"),
-  httpProxy = require("http-proxy");
-const proxy = httpProxy.createProxyServer({});
-const server = http.createServer(function (req, res) {
-  proxy.web(req, res, {
-    target: "https://atarcloud.com",
-    changeOrigin: true
+const express = require('express');
+
+const app = express();
+const https = require('https');
+const http = require('http');
+
+const proxyServerPort = process.env.PROXY_SERVER_PORT || 5000;
+
+// eslint-disable-next-line max-lines-per-function
+app.use('/', function (clientRequest, clientResponse) {
+  const targetUrl = clientRequest.headers.server_uri;
+  const parsedHost = targetUrl?.split('/').splice(2).splice(0, 1).join('/');
+  let parsedPort;
+  let parsedSSL;
+  if (targetUrl.startsWith('https://')) {
+    parsedPort = 443;
+    parsedSSL = https;
+  } else if (targetUrl.startsWith('http://')) {
+    parsedPort = 80;
+    parsedSSL = http;
+  }
+  const options = {
+    hostname: parsedHost,
+    port: parsedPort,
+    path: clientRequest.url,
+    method: clientRequest.method,
+    headers: {
+      'User-Agent': clientRequest.headers['user-agent'],
+    },
+  };
+
+  const serverRequest = parsedSSL.request(options, function (serverResponse) {
+    let body = '';
+    if (String(serverResponse.headers['content-type']).indexOf('text/html') !== -1) {
+      serverResponse.on('data', function (chunk) {
+        body += chunk;
+      });
+
+      serverResponse.on('end', function () {
+        // Make changes to HTML files when they're done being read.
+        // body = body.replace(`example`, `Cat!`);
+
+        clientResponse.writeHead(serverResponse.statusCode, serverResponse.headers);
+        clientResponse.end(body);
+      });
+    } else {
+      serverResponse.pipe(clientResponse, {
+        end: true,
+      });
+      clientResponse.contentType(serverResponse.headers['content-type']);
+    }
   });
+
+  serverRequest.end();
 });
 
-const PORT = process.env.PORT || 8000;
-
-console.log(`listening on port ${PORT}`);
-server.listen(PORT);
-
-proxy.on("error", function (err, req, res) {
-  console.log(err);
-  res.writeHead(500, {
-    "Content-Type": "text/plain",
-  });
-  res.end("Oops");
-});
-
-proxy.on("proxyRes", function (proxyRes, req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "POST, GET, OPTIONS, DELETE, PUT"
-  );
-});
+app.listen(proxyServerPort);
+console.log(`Proxy server listening on port ${proxyServerPort}`);
