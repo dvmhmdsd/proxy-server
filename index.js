@@ -3,9 +3,9 @@ const express = require('express');
 const app = express();
 const https = require('https');
 const http = require('http');
-
+const cors = require('cors');
 const proxyServerPort = process.env.PROXY_SERVER_PORT || 5000;
-
+app.use(cors());
 // eslint-disable-next-line max-lines-per-function
 app.use('/', function (clientRequest, clientResponse) {
   const targetUrl = clientRequest.headers.server_uri;
